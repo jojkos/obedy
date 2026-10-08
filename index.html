@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Obědy u Plynárenské</title>
+<meta name="description" content="Dnešní polední menu z hospod a bister kolem Plynárenské 1 v Brně.">
+<link rel="canonical" href="https://obedy-sigma.vercel.app/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://obedy-sigma.vercel.app/">
+<meta property="og:site_name" content="Obědy">
+<meta property="og:locale" content="cs_CZ">
+<meta property="og:title" content="Obědy u Plynárenské">
+<meta property="og:description" content="Dnešní polední menu z K2, Šindeláře, U Badinů, Sargamu, Golden Nepal a AnZi – na jednom místě, s cenami a časem chůze.">
+<meta property="og:image" content="https://obedy-sigma.vercel.app/icons/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Obědy – polední menu z hospod kolem Plynárenské 1 v Brně">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Obědy u Plynárenské">
+<meta name="twitter:description" content="Dnešní polední menu z hospod a bister kolem Plynárenské 1 v Brně.">
+<meta name="twitter:image" content="https://obedy-sigma.vercel.app/icons/og.png">
+<script>try { const t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Obědy">
+<meta name="theme-color" content="#e4e3df" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap">
+<style>
+  /* Každá hospoda jako pokladní bloček. Světlý = bílé účtenky na šedé, tmavý = tmavé účtenky na černé. */
+  :root {
+    --bg: #e4e3df; --paper: #fefefe; --ink: #1a1a1a; --muted: #6a6a6a; --faint: #a3a29d; --line: #b9b8b3;
+    --ok: #1f6b38; --shadow: rgba(0, 0, 0, .08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121212; --paper: #1f1f1e; --ink: #ecebe7; --muted: #9a9893; --faint: #6d6c68; --line: #3a3a38;
+      --ok: #8fd19e; --shadow: rgba(0, 0, 0, .4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121212; --paper: #1f1f1e; --ink: #ecebe7; --muted: #9a9893; --faint: #6d6c68; --line: #3a3a38;
+    --ok: #8fd19e; --shadow: rgba(0, 0, 0, .4);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 "JetBrains Mono", ui-monospace, monospace; }
+  button, input { font: inherit; color: inherit; }
+  a { color: inherit; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 32px 16px 64px; }
+
+  /* ---- hlavička */
+  header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px 24px; flex-wrap: wrap; }
+  .where { font-size: 13px; color: var(--muted); }
+  h1 { margin: 4px 0 0; font-size: clamp(34px, 6vw, 52px); font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
+  .search { display: flex; align-items: center; gap: 8px; background: var(--paper); border: 1px solid var(--ink); padding: 0 12px; width: 230px; }
+  .search span { color: var(--muted); }
+  .search input { border: 0; outline: 0; background: none; padding: 10px 0; flex: 1; min-width: 0; }
+  .search:focus-within { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .btn { border: 1px solid var(--line); background: none; padding: 9px 13px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: var(--ink); }
+  .btn.solid { background: var(--ink); border-color: var(--ink); color: var(--paper); font-weight: 700; }
+  .btn.solid:hover { opacity: .85; }
+  .btn[aria-pressed="true"] { border-color: var(--ink); background: var(--paper); font-weight: 700; }
+  .btn:focus-visible, .day:focus-visible { outline: 2px solid var(--ink); outline-offset: -1px; }
+  .grip:focus-visible { outline: 2px solid var(--ink); outline-offset: 0; }
+  .seg { display: flex; }
+  .seg .btn + .btn { margin-left: -1px; }
+  .seg .btn[aria-pressed="true"] { position: relative; z-index: 1; }
+
+  .days { display: flex; gap: 4px; margin: 22px 0 26px; overflow-x: auto; scrollbar-width: none; }
+  .days::-webkit-scrollbar { display: none; }
+  .day { flex: none; border: 1px solid var(--line); background: none; color: var(--muted); padding: 8px 14px; cursor: pointer; }
+  .day:hover { border-color: var(--ink); color: var(--ink); }
+  .day[aria-pressed="true"] { border-color: var(--ink); background: var(--paper); color: var(--ink); font-weight: 700; }
+
+  /* ---- účtenky */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 30px; align-items: start; }
+  .receipt { filter: drop-shadow(0 6px 10px var(--shadow)); transition: opacity .2s; }
+  .paper { position: relative; background: var(--paper); padding: 24px 22px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .zigzag { height: 12px; background:
+    linear-gradient(135deg, var(--paper) 50%, transparent 50%) 0 0 / 14px 12px repeat-x,
+    linear-gradient(225deg, var(--paper) 50%, transparent 50%) 0 0 / 14px 12px repeat-x; }
+  .receipt h2 { margin: 0; text-align: center; font-size: 20px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; padding: 0 24px; }
+  .receipt h2 a { text-decoration: none; }
+  .receipt h2 a:hover { text-decoration: underline; }
+  .sub { text-align: center; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+  .sub a { text-decoration: none; border-bottom: 1px dotted currentColor; }
+  .sub a:hover { color: var(--ink); }
+  .st-open { color: var(--ok); font-weight: 700; }
+  .st-soon { color: var(--ink); }
+  .cut { border-top: 1px dashed var(--ink); margin: 6px 0; }
+  .sec { font-weight: 700; text-transform: uppercase; margin-top: 4px; }
+  .sec small { font-size: inherit; font-weight: 400; text-transform: none; color: var(--muted); }
+  .row { display: flex; justify-content: space-between; gap: 14px; }
+  .row small { display: block; color: var(--muted); font-size: 12.5px; }
+  .price { font-weight: 700; white-space: nowrap; }
+  .price.incl { font-weight: 400; color: var(--muted); }
+  .row.dim { opacity: .3; }
+  mark { background: var(--ink); color: var(--paper); padding: 0 2px; }
+  .note { color: var(--muted); font-size: 12.5px; }
+  .empty { text-align: center; color: var(--muted); padding: 10px 0; }
+  .foot { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+  .foot span { color: var(--muted); }
+  .foot a { text-decoration: none; }
+  .foot a:hover { text-decoration: underline; }
+  .grip { position: absolute; top: 10px; right: 10px; border: 0; background: none; color: var(--faint); font-size: 16px; line-height: 1;
+    padding: 4px 6px; cursor: grab; touch-action: none; }
+  .grip:hover { color: var(--ink); }
+  .receipt.dragging { opacity: .5; }
+  .receipt.dragging .paper { outline: 2px dashed var(--ink); outline-offset: 4px; }
+  .receipt.past { opacity: .5; }
+  .receipt.past:hover { opacity: .9; }
+  .receipt.picked .paper { outline: 2px dashed var(--ink); outline-offset: 6px; }
+  .receipt.picked { animation: print .5s ease-out; }
+  @keyframes print { from { transform: translateY(-10px); opacity: .4; } to { transform: none; opacity: 1; } }
+
+  /* ---- mapa */
+  #map { height: min(70vh, 640px); border: 1px solid var(--ink); background: var(--paper); }
+  #map[hidden], #grid[hidden] { display: none; }
+  /* normální barvy OSM, v tmavém motivu ztmavené (invert + otočení odstínu zachová barvy) */
+  :root[data-theme="dark"] .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.7); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.7); } }
+  .leaflet-container { font: 13px "JetBrains Mono", monospace; background: var(--bg); }
+  .pin { display: flex; align-items: center; gap: 6px; white-space: nowrap; transform: translate(-6px, -6px); }
+  .pin i { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper); box-shadow: 0 0 0 1px var(--ink); flex: none; }
+  .pin span { background: var(--paper); color: var(--ink); border: 1px solid var(--ink); padding: 1px 6px; font-size: 11.5px; font-weight: 700; }
+  .pin.left { flex-direction: row-reverse; transform: translate(calc(-100% + 6px), -6px); }
+  .pin.home i { border-radius: 2px; }
+  .pin.home span { background: var(--ink); color: var(--paper); }
+  .pin.nomenu span { color: var(--muted); font-weight: 400; }
+  .leaflet-popup-content-wrapper { background: var(--paper); color: var(--ink); border-radius: 0; box-shadow: 0 6px 16px var(--shadow); }
+  .leaflet-popup-tip { background: var(--paper); }
+  .leaflet-popup-content { margin: 14px 16px; min-width: 230px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+  .leaflet-popup-content h3 { margin: 0; font-size: 15px; font-weight: 800; text-transform: uppercase; }
+  .leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+  .leaflet-control-attribution { background: var(--paper) !important; color: var(--muted); font-size: 10px; }
+  .leaflet-control-attribution a { color: var(--ink); }
+  .leaflet-bar a { background: var(--paper); color: var(--ink); border-color: var(--line); border-radius: 0 !important; }
+
+  footer { margin-top: 36px; color: var(--muted); font-size: 12.5px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  /* ---- kostka */
+  .roll { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px;
+    background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: blur(4px); }
+  .roll[hidden] { display: none; }
+  .roll-box { width: min(380px, 100%); filter: drop-shadow(0 16px 30px var(--shadow)); }
+  .roll-box .paper { padding: 32px 26px 22px; align-items: center; text-align: center; gap: 6px; }
+  .scene { width: 88px; height: 88px; margin: 0 auto 22px; perspective: 600px; }
+  .cube { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transform: rotateX(-20deg) rotateY(25deg); }
+  .face { position: absolute; inset: 0; border-radius: 12px; padding: 12px; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+    background: #fefefe; border: 2px solid #1a1a1a; backface-visibility: hidden; }
+  .pip { width: 13px; height: 13px; border-radius: 50%; background: #1a1a1a; place-self: center; }
+  .f1 { transform: rotateY(0deg) translateZ(44px); }   .f2 { transform: rotateY(90deg) translateZ(44px); }
+  .f3 { transform: rotateY(180deg) translateZ(44px); } .f4 { transform: rotateY(-90deg) translateZ(44px); }
+  .f5 { transform: rotateX(90deg) translateZ(44px); }  .f6 { transform: rotateX(-90deg) translateZ(44px); }
+  .roll-label { color: var(--muted); min-height: 1.4em; }
+  .roll-name { font-size: 26px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; min-height: 1.2em; }
+  .roll-name.landed { animation: print .4s ease-out; }
+  .roll-dish { color: var(--muted); font-size: 13px; min-height: 2.8em; }
+  .roll-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; visibility: hidden; }
+  .roll-actions.show { visibility: visible; }
+
+  @media (max-width: 640px) {
+    .tools { width: 100%; display: grid; grid-template-columns: 1fr auto; }
+    .search { width: 100%; grid-column: 1 / -1; }
+    .tools .solid { grid-column: 1 / -1; padding: 12px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="where">Plynárenská 1 a okolí, Brno</div>
+      <h1 id="title">Obědy</h1>
+    </div>
+    <div class="tools">
+      <label class="search"><span>&gt;</span><input type="search" id="q" placeholder="hledat jídlo" aria-label="Hledat jídlo"></label>
+      <button id="dice" class="btn solid" type="button" title="Nevíš kam? Hoď kostkou">[ hodit kostkou ]</button>
+      <div class="seg" role="group" aria-label="Zobrazení">
+        <button class="btn" type="button" data-view="list" aria-pressed="true">seznam</button>
+        <button class="btn" type="button" data-view="map" aria-pressed="false">mapa</button>
+      </div>
+      <button id="theme" class="btn" type="button" title="Přepnout motiv"></button>
+    </div>
+  </header>
+
+  <nav class="days" id="days" aria-label="Den"></nav>
+  <main class="grid" id="grid"></main>
+  <div id="map" hidden></div>
+  <footer><span id="foot"></span><span>pěšky od Plynárenské 1</span></footer>
+</div>
+
+<div class="roll" id="roll" hidden role="dialog" aria-modal="true" aria-label="Hod kostkou">
+  <div class="roll-box">
+    <div class="paper">
+      <div class="scene"><div class="cube" id="cube"><div class="face f1"><i class="pip" style="grid-area:2/2"></i></div><div class="face f2"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:3/3"></i></div><div class="face f3"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:2/2"></i><i class="pip" style="grid-area:3/3"></i></div><div class="face f4"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:1/3"></i><i class="pip" style="grid-area:3/1"></i><i class="pip" style="grid-area:3/3"></i></div><div class="face f5"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:1/3"></i><i class="pip" style="grid-area:2/2"></i><i class="pip" style="grid-area:3/1"></i><i class="pip" style="grid-area:3/3"></i></div><div class="face f6"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:1/3"></i><i class="pip" style="grid-area:2/1"></i><i class="pip" style="grid-area:2/3"></i><i class="pip" style="grid-area:3/1"></i><i class="pip" style="grid-area:3/3"></i></div></div></div>
+      <div class="roll-label" id="rollLabel"></div>
+      <div class="roll-name" id="rollName"></div>
+      <div class="roll-dish" id="rollDish"></div>
+      <div class="roll-actions" id="rollActions">
+        <button type="button" class="btn" id="rollAgain">znovu</button>
+        <button type="button" class="btn solid" id="rollGo">ukázat menu</button>
+      </div>
+    </div>
+    <div class="zigzag"></div>
+  </div>
+</div>
+
+<script>
+const DOW = ["neděle", "pondělí", "úterý", "středa", "čtvrtek", "pátek", "sobota"];
+const DOW_SHORT = ["ne", "po", "út", "st", "čt", "pá", "so"];
+let today, dates = [], current = null, data = null, view = "list";
+const $ = id => document.getElementById(id);
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const norm = s => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+function hl(text, q) {
+  if (!q) return esc(text);
+  const i = norm(text).indexOf(q);
+  if (i < 0) return esc(text);
+  return esc(text.slice(0, i)) + "<mark>" + esc(text.slice(i, i + q.length)) + "</mark>" + esc(text.slice(i + q.length));
+}
+function fmtDate(s) {
+  const d = new Date(s + "T12:00");
+  return { dow: DOW[d.getDay()], short: DOW_SHORT[d.getDay()], dm: `${d.getDate()}. ${d.getMonth() + 1}.`, dmc: `${d.getDate()}.${d.getMonth() + 1}.`, wd: d.getDay() };
+}
+const itemsFor = (r, d) => r.days.find(x => x.date === d)?.items || [];
+
+async function init() {
+  data = await (await fetch("/api/menus")).json();
+  today = data.today;
+  dates = [...new Set([today, ...data.restaurants.flatMap(r => r.days.map(d => d.date))])].sort();
+  const fromHash = location.hash.slice(1);
+  current = dates.includes(fromHash) ? fromHash : today;
+  $("foot").textContent = `staženo ${new Date(data.updated).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+  select(current);
+  try { if (localStorage.getItem("view") === "map") setView("map"); } catch {}
+}
+
+function select(d) {
+  current = d; history.replaceState(null, "", "#" + d);
+  $("days").innerHTML = dates.map(x => {
+    const f = fmtDate(x);
+    return `<button class="day" type="button" data-d="${x}" aria-pressed="${x === current}">${f.short} ${f.dmc}${x === today ? " dnes" : ""}</button>`;
+  }).join("");
+  $("days").querySelector('[aria-pressed="true"]')?.scrollIntoView({ inline: "center", block: "nearest" });
+  const f = fmtDate(d);
+  $("title").textContent = `Obědy · ${f.short} ${f.dm}`;
+  render();
+  if (map) refreshPins();
+}
+
+// ---- stav výdeje (jen pro dnešek, podle místního času)
+const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+function status(r) {
+  if (current !== today || !itemsFor(r, current).length || !r.hours) return null;
+  const now = new Date(), n = now.getHours() * 60 + now.getMinutes();
+  const [from, to] = r.hours.menu || r.hours.open;
+  const w = r.hours.menu ? ["výdej od", "otevřeno", "výdej skončil"] : ["otevírá v", "otevřeno", "zavřeno"];
+  if (n < toMin(from)) return { cls: "soon", text: `${w[0]} ${from}` };
+  if (n < toMin(to)) return { cls: "open", text: w[1] };
+  return { cls: "over", text: w[2] };
+}
+function walkUrl(r) { return `https://www.google.com/maps/dir/?api=1&travelmode=walking&origin=${encodeURIComponent(data.origin)}&destination=${r.walk.geo}`; }
+function sub(r) {
+  const st = status(r);
+  const line1 = [esc(r.address), r.walk ? `<a href="${walkUrl(r)}" target="_blank" rel="noopener" title="Navigace pěšky">${r.walk.min} min pěšky</a>` : ""].filter(Boolean).join(" · ");
+  const hours = r.hours ? (r.hours.menu ? `výdej ${r.hours.menu[0]}–${r.hours.menu[1]}` : `otevřeno ${r.hours.open[0]}–${r.hours.open[1]}`) : "";
+  const line2 = [hours, st ? `<span class="st-${st.cls}">${st.text}</span>` : ""].filter(Boolean).join(" · ");
+  return `<div class="sub">${line1}${line2 ? `<br>${line2}` : ""}</div>`;
+}
+function price(i) {
+  return i.price ? `<span class="price">${i.price},-</span>` : `<span class="price incl">${esc(i.included || "—")}</span>`;
+}
+function rows(items, q) {
+  return items.map(i => {
+    const dim = q && !norm(i.name + " " + (i.note || "")).includes(q) ? "dim" : "";
+    return `<div class="row ${dim}"><span>${hl(i.name, q)}${i.note ? `<small>${hl(i.note, q)}</small>` : ""}</span>${price(i)}</div>`;
+  }).join("");
+}
+
+function render() {
+  const q = norm($("q").value.trim());
+  const order = loadOrder();
+  const pos = id => { const i = order.indexOf(id); return i < 0 ? 1e3 : i; };
+  const rs = data.restaurants.map((r, i) => ({ r, i })).sort((a, b) => pos(a.r.id) - pos(b.r.id) || a.i - b.i).map(x => x.r);
+  $("grid").innerHTML = rs.map(r => receipt(r, q)).join("");
+}
+
+function receipt(r, q) {
+  const items = itemsFor(r, current);
+  const link = esc(r.menuUrl || r.url);
+  const groups = [["polévka", "Polévky"], ["hlavní", "Hlavní jídla"], ["ostatní", "Další"]];
+  let body = "";
+  if (!items.length) {
+    const wd = fmtDate(current).wd;
+    body = `<div class="empty">${(r.error || r.visionError) && wd >= 1 && wd <= 5 ? "menu se teď nepodařilo načíst" : "na tento den menu není"}</div>`;
+  } else {
+    for (const [cat, label] of groups) {
+      const list = items.filter(i => i.category === cat);
+      if (!list.length) continue;
+      const free = cat === "polévka" && list.every(i => /zdarma/.test(i.note || "")) ? " <small>k hlavnímu zdarma</small>" : "";
+      const shown = free ? list.map(i => ({ ...i, note: i.note.replace(/k hlavnímu jídlu zdarma/, "").trim() || null })) : list;
+      body += `<div class="sec">${label}${free}</div>${rows(shown, q)}`;
+    }
+    if (r.note) body += `<div class="note">${esc(r.note)}</div>`;
+  }
+  const past = status(r)?.cls === "over" ? "past" : "";
+  return `<article class="receipt ${past}" data-id="${esc(r.id)}">
+    <div class="paper">
+      <button class="grip" type="button" title="Přetáhni pro změnu pořadí" aria-label="Přesunout ${esc(r.name)}">⠿</button>
+      <h2><a href="${link}" target="_blank" rel="noopener">${esc(r.name)}</a></h2>
+      ${sub(r)}
+      <div class="cut"></div>
+      ${body}
+      <div class="cut"></div>
+      <div class="foot"><a href="${link}" target="_blank" rel="noopener">* originální menu *</a>${items.length && r.images?.length ? "<span>přepsáno z obrázku</span>" : ""}</div>
+    </div>
+    <div class="zigzag"></div>
+  </article>`;
+}
+
+$("days").addEventListener("click", e => { const b = e.target.closest(".day"); if (b) select(b.dataset.d); });
+$("q").addEventListener("input", () => data && render());
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" || !$("roll").hidden) return;
+  const i = dates.indexOf(current);
+  if (e.key === "ArrowLeft" && i > 0) select(dates[i - 1]);
+  if (e.key === "ArrowRight" && i < dates.length - 1) select(dates[i + 1]);
+});
+// stav výdeje se mění s časem
+setInterval(() => { if (data && current === today && !dragged && view === "list") render(); }, 60000);
+
+// ---- pořadí restaurací: přetahování za úchyt, funguje myší i prstem
+function loadOrder() { try { return JSON.parse(localStorage.getItem("order")) || []; } catch { return []; } }
+function saveOrder() {
+  const ids = [...document.querySelectorAll("#grid .receipt")].map(c => c.dataset.id);
+  try { localStorage.setItem("order", JSON.stringify(ids)); } catch {}
+}
+let dragged = null;
+$("grid").addEventListener("pointerdown", e => {
+  const grip = e.target.closest(".grip");
+  if (!grip) return;
+  e.preventDefault();
+  dragged = grip.closest(".receipt");
+  dragged.classList.add("dragging");
+});
+// Přesun karty v DOM zruší pointer capture, proto pohyb i konec tažení sledujeme na celém dokumentu.
+document.addEventListener("pointermove", e => {
+  if (!dragged) return;
+  const over = document.elementFromPoint(e.clientX, e.clientY)?.closest(".receipt");
+  if (!over || over === dragged) return;
+  const cards = [...document.querySelectorAll("#grid .receipt")];
+  over.parentNode.insertBefore(dragged, cards.indexOf(dragged) < cards.indexOf(over) ? over.nextSibling : over);
+});
+const endDrag = () => { if (!dragged) return; dragged.classList.remove("dragging"); dragged = null; saveOrder(); };
+document.addEventListener("pointerup", endDrag);
+document.addEventListener("pointercancel", endDrag);
+window.addEventListener("blur", endDrag);
+
+// ---- seznam / mapa (Leaflet + OpenStreetMap, načte se až při prvním otevření mapy)
+let map = null, pins = [];
+const geo = s => s.split(",").map(Number);
+function loadLeaflet() {
+  if (window.L) return Promise.resolve();
+  const css = document.createElement("link");
+  css.rel = "stylesheet"; css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+  document.head.prepend(css);
+  return new Promise((ok, fail) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    s.onload = ok; s.onerror = fail;
+    document.head.append(s);
+  });
+}
+function popupHtml(r) {
+  const mains = itemsFor(r, current).filter(i => i.category === "hlavní").slice(0, 4);
+  return `<h3>${esc(r.name)}</h3>${sub(r)}<div class="cut"></div>
+    ${mains.length ? rows(mains, "") : `<div class="empty">na tento den menu není</div>`}
+    <button class="btn solid" type="button" data-show="${esc(r.id)}">celé menu</button>`;
+}
+function refreshPins() {
+  pins.forEach(p => p.remove());
+  pins = data.restaurants.filter(r => r.walk).map(r => {
+    const [lat, lon] = geo(r.walk.geo);
+    // popisek doleva, když je hned vpravo jiný špendlík (Šindelář a K2 jsou kousek od sebe)
+    const crowded = data.restaurants.some(o => o.walk && o !== r && Math.abs(geo(o.walk.geo)[0] - lat) < .0008 && geo(o.walk.geo)[1] - lon > 0 && geo(o.walk.geo)[1] - lon < .004);
+    const cls = [itemsFor(r, current).length ? "" : "nomenu", crowded ? "left" : ""].join(" ");
+    const icon = L.divIcon({ className: "", html: `<div class="pin ${cls}"><i></i><span>${esc(r.name)} · ${r.walk.min} min</span></div>`, iconSize: [0, 0] });
+    return L.marker([lat, lon], { icon }).bindPopup(() => popupHtml(r), { offset: [0, -4] }).addTo(map);
+  });
+}
+async function setView(v) {
+  view = v;
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === v));
+  $("grid").hidden = v !== "list";
+  $("map").hidden = v !== "map";
+  try { localStorage.setItem("view", v); } catch {}
+  if (v === "list") return render();
+  await loadLeaflet();
+  if (!map) {
+    map = L.map("map");
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
+    const home = L.divIcon({ className: "", html: `<div class="pin home"><i></i><span>Plynárenská 1</span></div>`, iconSize: [0, 0] });
+    L.marker(geo(data.originGeo), { icon: home, zIndexOffset: 1000 }).addTo(map);
+    refreshPins();
+    map.fitBounds(L.latLngBounds([geo(data.originGeo), ...data.restaurants.filter(r => r.walk).map(r => geo(r.walk.geo))]), { padding: [60, 60] });
+  } else {
+    refreshPins();
+  }
+  map.invalidateSize();
+}
+document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+function showCard(id) {
+  if (view !== "list") setView("list");
+  const card = document.querySelector(`.receipt[data-id="${CSS.escape(id)}"]`);
+  if (!card) return;
+  document.querySelectorAll(".receipt.picked").forEach(c => c.classList.remove("picked"));
+  card.classList.add("picked");
+  card.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  setTimeout(() => card.classList.remove("picked"), 4000);
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-show]"); if (b) showCard(b.dataset.show); });
+
+// ---- kostka: náhodně vybere restauraci, která má na vybraný den menu (a ještě vydává)
+const FACE_ROT = { 1: [0, 0], 2: [0, -90], 3: [0, -180], 4: [0, 90], 5: [-90, 0], 6: [90, 0] };
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let lastPick = null, picked = null, rolling = false;
+
+function rollDice() {
+  if (!data || rolling) return;
+  const withMenu = data.restaurants.filter(r => itemsFor(r, current).length);
+  const stillOpen = withMenu.filter(r => status(r)?.cls !== "over");
+  const pool = stillOpen.length ? stillOpen : withMenu.length ? withMenu : data.restaurants;
+  const options = pool.length > 1 ? pool.filter(r => r.id !== lastPick) : pool;
+  picked = options[Math.floor(Math.random() * options.length)];
+  lastPick = picked.id;
+  rolling = true;
+
+  $("roll").hidden = false;
+  $("rollActions").classList.remove("show");
+  $("rollName").classList.remove("landed");
+  $("rollLabel").textContent = "házím…";
+  $("rollDish").textContent = "";
+
+  const [x, y] = FACE_ROT[1 + Math.floor(Math.random() * 6)];
+  const duration = reduceMotion ? 0 : 1600;
+  if (!reduceMotion) {
+    $("cube").animate([
+      { transform: "rotateX(-20deg) rotateY(25deg) translateY(0)" },
+      { transform: `rotateX(${x - 540}deg) rotateY(${y + 300}deg) translateY(-40px)`, offset: .35 },
+      { transform: `rotateX(${x - 700}deg) rotateY(${y + 680}deg) translateY(0)`, offset: .75 },
+      { transform: `rotateX(${x - 720}deg) rotateY(${y + 720}deg)` },
+    ], { duration, easing: "cubic-bezier(.25,.8,.3,1)", fill: "forwards" });
+  }
+  // „automat“ – názvy se střídají a zpomalují; řídí se skutečně uplynulým časem
+  const start = performance.now();
+  let i = Math.floor(Math.random() * pool.length);
+  const tick = () => {
+    const t = performance.now() - start;
+    if (t >= duration) return land();
+    $("rollName").textContent = pool[i++ % pool.length].name;
+    setTimeout(tick, 60 + (t / duration) ** 2 * 220);
+  };
+  tick();
+}
+function land() {
+  rolling = false;
+  const main = itemsFor(picked, current).filter(i => i.category === "hlavní");
+  const tip = main.length ? main[Math.floor(Math.random() * main.length)] : null;
+  $("rollLabel").textContent = "dnes jdeme do";
+  $("rollName").textContent = picked.name;
+  $("rollName").classList.add("landed");
+  $("rollDish").textContent = [picked.walk ? `${picked.walk.min} min pěšky` : "", tip ? `tip: ${tip.name}${tip.price ? ` (${tip.price},-)` : ""}` : ""].filter(Boolean).join(" · ");
+  $("rollActions").classList.add("show");
+}
+function closeRoll() { if (!rolling) $("roll").hidden = true; }
+$("dice").addEventListener("click", rollDice);
+$("rollAgain").addEventListener("click", rollDice);
+$("rollGo").addEventListener("click", () => { closeRoll(); showCard(picked.id); });
+$("roll").addEventListener("click", e => { if (e.target.id === "roll") closeRoll(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeRoll(); });
+
+// ---- motiv: automaticky → světlý → tmavý, pamatuje se v localStorage
+const THEMES = { system: "◐ auto", light: "☀ světlý", dark: "☾ tmavý" };
+let theme = document.documentElement.dataset.theme || "system";
+function applyTheme(t) {
+  if (t === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  $("theme").textContent = THEMES[t];
+}
+applyTheme(theme);
+$("theme").addEventListener("click", () => {
+  theme = { system: "light", light: "dark", dark: "system" }[theme];
+  applyTheme(theme);
+  try { theme === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", theme); } catch {}
+});
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+init().catch(() => { $("grid").innerHTML = `<p class="empty">menu se nepodařilo načíst, zkus to prosím za chvíli</p>`; });
+</script>
+</body>
+</html>

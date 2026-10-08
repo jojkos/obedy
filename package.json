@@ -1,0 +1,7 @@
+{
+  "name": "obedy",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "node dev.js" },
+  "engines": { "node": "24.x" }
+}
