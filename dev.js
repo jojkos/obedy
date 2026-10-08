@@ -3,7 +3,8 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, normalize } from "node:path";
 import handler from "./api/menus.js";
-import vision from "./api/vision.js";
+import menu from "./api/menu.js";
+import sources from "./api/sources.js";
 
 try { process.loadEnvFile(new URL("./.env.local", import.meta.url).pathname); } catch {} // GEMINI_API_KEY=…
 
@@ -12,7 +13,8 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", "
 
 createServer(async (req, res) => {
   if (req.url.startsWith("/api/menus")) return handler(req, res);
-  if (req.url.startsWith("/api/vision")) return vision(req, res);
+  if (req.url.startsWith("/api/menu?")) return menu(req, res);
+  if (req.url.startsWith("/api/sources")) return sources(req, res);
   const path = normalize(req.url.split("?")[0]).replace(/^(\.\.[/\\])+/, "");
   const file = path === "/" ? "/index.html" : path;
   try {

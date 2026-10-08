@@ -1,5 +1,5 @@
 // Service worker: stránka i menu se berou ze sítě, offline se použije poslední uložená verze.
-const CACHE = "obedy-v2";
+const CACHE = "obedy-v3";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(
@@ -9,7 +9,7 @@ self.addEventListener("activate", e => e.waitUntil(
 
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/vision")) return;
+  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/")) return;
   e.respondWith(
     fetch(e.request)
       .then(res => {

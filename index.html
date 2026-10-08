@@ -20,7 +20,9 @@
 <meta name="twitter:title" content="Obědy u Plynárenské">
 <meta name="twitter:description" content="Dnešní polední menu z hospod a bister kolem Plynárenské 1 v Brně.">
 <meta name="twitter:image" content="https://obedy-sigma.vercel.app/icons/og.png">
-<script>try { const t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
+<script>/* výchozí je světlý motiv; uložené může být „dark“ nebo „system“ */
+let savedTheme = null; try { savedTheme = localStorage.getItem("theme"); } catch {}
+if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme === "dark" ? "dark" : "light";</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -106,6 +108,10 @@
   .row.dim { opacity: .3; }
   mark { background: var(--ink); color: var(--paper); padding: 0 2px; }
   .note { color: var(--muted); font-size: 12.5px; }
+  .loading { display: flex; flex-direction: column; gap: 10px; padding: 6px 0; }
+  .bar { height: 12px; background: var(--line); opacity: .5; animation: pulse 1.2s ease-in-out infinite; }
+  .bar:nth-child(2) { animation-delay: .15s; } .bar:nth-child(3) { animation-delay: .3s; } .bar:nth-child(4) { animation-delay: .45s; }
+  @keyframes pulse { 50% { opacity: .2; } }
   .empty { text-align: center; color: var(--muted); padding: 10px 0; }
   .foot { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; font-size: 13px; }
   .foot span { color: var(--muted); }
@@ -237,24 +243,58 @@ function fmtDate(s) {
 }
 const itemsFor = (r, d) => r.days.find(x => x.date === d)?.items || [];
 
+const pragueToday = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Prague" });
+const fmtTime = iso => new Date(iso).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+
 async function init() {
-  data = await (await fetch("/api/menus")).json();
-  today = data.today;
-  dates = [...new Set([today, ...data.restaurants.flatMap(r => r.days.map(d => d.date))])].sort();
+  const meta = await (await fetch("/api/sources")).json();
+  today = pragueToday();
+  data = { ...meta, restaurants: meta.restaurants.map(r => ({ ...r, days: [], loading: true })) };
   const fromHash = location.hash.slice(1);
-  current = dates.includes(fromHash) ? fromHash : today;
-  $("foot").textContent = `staženo ${new Date(data.updated).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+  current = /^\d{4}-\d{2}-\d{2}$/.test(fromHash) ? fromHash : today;
+  updateDates();
   select(current);
   try { if (localStorage.getItem("view") === "map") setView("map"); } catch {}
+  // každá hospoda se načítá zvlášť – hotové se ukážou hned, pomalé nezdržují ostatní
+  data.restaurants.forEach(r => loadRestaurant(r.id));
+  setTimeout(() => { if (data.restaurants.some(r => r.loading)) { slow = true; if (!dragged) render(); } }, 6000);
 }
 
-function select(d) {
-  current = d; history.replaceState(null, "", "#" + d);
+let slow = false;
+async function loadRestaurant(id) {
+  let fresh;
+  try {
+    const res = await fetch(`/api/menu?source=${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    fresh = (await res.json()).restaurant;
+  } catch {
+    fresh = { ...data.restaurants.find(r => r.id === id), days: [], loading: false, error: "nepodařilo se načíst" };
+  }
+  data.restaurants = data.restaurants.map(r => r.id === id ? { ...fresh, loading: false } : r);
+  const updated = data.restaurants.filter(r => r.updated || !r.loading).length;
+  $("foot").textContent = data.restaurants.every(r => !r.loading) ? `načteno ${fmtTime(new Date().toISOString())}` : `načítám… ${updated}/${data.restaurants.length}`;
+  const before = dates.join();
+  updateDates();
+  if (dates.join() !== before) renderDays();
+  if (!dragged) render();
+  if (map) refreshPins();
+}
+
+function updateDates() {
+  dates = [...new Set([today, current, ...data.restaurants.flatMap(r => r.days.map(d => d.date))])].filter(Boolean).sort();
+}
+
+function renderDays() {
   $("days").innerHTML = dates.map(x => {
     const f = fmtDate(x);
     return `<button class="day" type="button" data-d="${x}" aria-pressed="${x === current}">${f.short} ${f.dmc}${x === today ? " dnes" : ""}</button>`;
   }).join("");
   $("days").querySelector('[aria-pressed="true"]')?.scrollIntoView({ inline: "center", block: "nearest" });
+}
+
+function select(d) {
+  current = d; history.replaceState(null, "", "#" + d);
+  renderDays();
   const f = fmtDate(d);
   $("title").textContent = `Obědy · ${f.short} ${f.dm}`;
   render();
@@ -303,7 +343,11 @@ function receipt(r, q) {
   const link = esc(r.menuUrl || r.url);
   const groups = [["polévka", "Polévky"], ["hlavní", "Hlavní jídla"], ["ostatní", "Další"]];
   let body = "";
-  if (!items.length) {
+  if (r.loading) {
+    const why = r.kind?.includes("AI") ? "čtu menu z obrázku, poprvé to chvíli trvá…" : "web restaurace odpovídá pomalu…";
+    body = `<div class="loading" aria-live="polite"><div class="bar" style="width: 70%"></div><div class="bar" style="width: 90%"></div><div class="bar" style="width: 55%"></div><div class="bar" style="width: 80%"></div>
+      <div class="empty">${slow ? why : "tisknu účtenku…"}</div></div>`;
+  } else if (!items.length) {
     const wd = fmtDate(current).wd;
     body = `<div class="empty">${(r.error || r.visionError) && wd >= 1 && wd <= 5 ? "menu se teď nepodařilo načíst" : "na tento den menu není"}</div>`;
   } else {
@@ -315,6 +359,7 @@ function receipt(r, q) {
       body += `<div class="sec">${label}${free}</div>${rows(shown, q)}`;
     }
     if (r.note) body += `<div class="note">${esc(r.note)}</div>`;
+    if (r.stale) body += `<div class="note">web teď neodpovídá – zobrazeno menu uložené ${fmtTime(r.stale)}</div>`;
   }
   const past = status(r)?.cls === "over" ? "past" : "";
   return `<article class="receipt ${past}" data-id="${esc(r.id)}">
@@ -492,22 +537,22 @@ $("rollGo").addEventListener("click", () => { closeRoll(); showCard(picked.id); 
 $("roll").addEventListener("click", e => { if (e.target.id === "roll") closeRoll(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeRoll(); });
 
-// ---- motiv: automaticky → světlý → tmavý, pamatuje se v localStorage
+// ---- motiv: světlý (výchozí) → tmavý → podle systému, pamatuje se v localStorage
 const THEMES = { system: "◐ auto", light: "☀ světlý", dark: "☾ tmavý" };
-let theme = document.documentElement.dataset.theme || "system";
+let theme = savedTheme === "dark" || savedTheme === "system" ? savedTheme : "light";
 function applyTheme(t) {
   if (t === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
   $("theme").textContent = THEMES[t];
 }
 applyTheme(theme);
 $("theme").addEventListener("click", () => {
-  theme = { system: "light", light: "dark", dark: "system" }[theme];
+  theme = { light: "dark", dark: "system", system: "light" }[theme];
   applyTheme(theme);
-  try { theme === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", theme); } catch {}
+  try { theme === "light" ? localStorage.removeItem("theme") : localStorage.setItem("theme", theme); } catch {}
 });
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
-init().catch(() => { $("grid").innerHTML = `<p class="empty">menu se nepodařilo načíst, zkus to prosím za chvíli</p>`; });
+init().catch(() => { $("grid").innerHTML = `<p class="empty">nepodařilo se načíst seznam hospod, zkus to prosím za chvíli</p>`; });
 </script>
 </body>
 </html>
