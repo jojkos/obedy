@@ -154,23 +154,30 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
 
   footer { margin-top: 36px; color: var(--muted); font-size: 12.5px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
-  /* ---- kostka */
+  /* ---- automat */
   .roll { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px;
     background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: blur(4px); }
   .roll[hidden] { display: none; }
   .roll-box { width: min(380px, 100%); filter: drop-shadow(0 16px 30px var(--shadow)); }
-  .roll-box .paper { padding: 32px 26px 22px; align-items: center; text-align: center; gap: 6px; }
-  .scene { width: 88px; height: 88px; margin: 0 auto 22px; perspective: 600px; }
-  .cube { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transform: rotateX(-20deg) rotateY(25deg); }
-  .face { position: absolute; inset: 0; border-radius: 12px; padding: 12px; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-    background: #fefefe; border: 2px solid #1a1a1a; backface-visibility: hidden; }
-  .pip { width: 13px; height: 13px; border-radius: 50%; background: #1a1a1a; place-self: center; }
-  .f1 { transform: rotateY(0deg) translateZ(44px); }   .f2 { transform: rotateY(90deg) translateZ(44px); }
-  .f3 { transform: rotateY(180deg) translateZ(44px); } .f4 { transform: rotateY(-90deg) translateZ(44px); }
-  .f5 { transform: rotateX(90deg) translateZ(44px); }  .f6 { transform: rotateX(-90deg) translateZ(44px); }
+  .roll-box .paper { padding: 28px 26px 22px; align-items: center; text-align: center; gap: 6px; }
   .roll-label { color: var(--muted); min-height: 1.4em; }
-  .roll-name { font-size: 26px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; min-height: 1.2em; }
-  .roll-name.landed { animation: print .4s ease-out; }
+  .slot { display: flex; align-items: center; gap: 10px; width: 100%; margin: 6px 0 10px; }
+  .reel { --row: 46px; position: relative; flex: 1; min-width: 0; height: calc(var(--row) * 3); overflow: hidden;
+    border: 2px solid var(--ink); background: var(--paper); }
+  .reel::before, .reel::after { content: ""; position: absolute; left: 0; right: 0; height: var(--row); z-index: 1; pointer-events: none; }
+  .reel::before { top: 0; background: linear-gradient(var(--paper), color-mix(in srgb, var(--paper) 40%, transparent)); }
+  .reel::after { bottom: 0; background: linear-gradient(color-mix(in srgb, var(--paper) 40%, transparent), var(--paper)); }
+  .payline { position: absolute; left: 0; right: 0; top: var(--row); height: var(--row); z-index: 2; pointer-events: none;
+    border-top: 1px dashed var(--ink); border-bottom: 1px dashed var(--ink); }
+  .payline::before, .payline::after { position: absolute; top: 50%; transform: translateY(-50%); font-size: 12px; }
+  .payline::before { content: "▶"; left: 4px; }
+  .payline::after { content: "◀"; right: 4px; }
+  .strip div { height: var(--row); line-height: var(--row); padding: 0 22px; font-size: 19px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .reel.won .payline { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .lever { position: relative; width: 16px; height: 96px; flex: none; transform-origin: 50% 100%; }
+  .lever::before { content: ""; position: absolute; left: 6px; top: 12px; bottom: 0; width: 4px; background: var(--ink); }
+  .lever::after { content: ""; position: absolute; left: 0; top: 0; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); }
   .roll-dish { color: var(--muted); font-size: 13px; min-height: 2.8em; }
   .roll-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; visibility: hidden; }
   .roll-actions.show { visibility: visible; }
@@ -193,7 +200,7 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
     </div>
     <div class="tools">
       <label class="search"><span>&gt;</span><input type="search" id="q" placeholder="hledat jídlo" aria-label="Hledat jídlo"></label>
-      <button id="dice" class="btn solid" type="button" title="Nevíš kam? Hoď kostkou">[ hodit kostkou ]</button>
+      <button id="dice" class="btn solid" type="button" title="Nevíš kam? Zatoč automatem">[ zatočit ]</button>
       <div class="seg" role="group" aria-label="Zobrazení">
         <button class="btn" type="button" data-view="list" aria-pressed="true">seznam</button>
         <button class="btn" type="button" data-view="map" aria-pressed="false">mapa</button>
@@ -208,12 +215,11 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
   <footer><span id="foot"></span><span>pěšky od Plynárenské 1</span></footer>
 </div>
 
-<div class="roll" id="roll" hidden role="dialog" aria-modal="true" aria-label="Hod kostkou">
+<div class="roll" id="roll" hidden role="dialog" aria-modal="true" aria-label="Automat na oběd">
   <div class="roll-box">
     <div class="paper">
-      <div class="scene"><div class="cube" id="cube"><div class="face f1"><i class="pip" style="grid-area:2/2"></i></div><div class="face f2"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:3/3"></i></div><div class="face f3"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:2/2"></i><i class="pip" style="grid-area:3/3"></i></div><div class="face f4"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:1/3"></i><i class="pip" style="grid-area:3/1"></i><i class="pip" style="grid-area:3/3"></i></div><div class="face f5"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:1/3"></i><i class="pip" style="grid-area:2/2"></i><i class="pip" style="grid-area:3/1"></i><i class="pip" style="grid-area:3/3"></i></div><div class="face f6"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:1/3"></i><i class="pip" style="grid-area:2/1"></i><i class="pip" style="grid-area:2/3"></i><i class="pip" style="grid-area:3/1"></i><i class="pip" style="grid-area:3/3"></i></div></div></div>
       <div class="roll-label" id="rollLabel"></div>
-      <div class="roll-name" id="rollName"></div>
+      <div class="slot"><div class="reel" id="reel"><div class="strip" id="strip"></div><div class="payline"></div></div><div class="lever" id="lever" aria-hidden="true"></div></div>
       <div class="roll-dish" id="rollDish"></div>
       <div class="roll-actions" id="rollActions">
         <button type="button" class="btn" id="rollAgain">znovu</button>
@@ -496,8 +502,7 @@ function showCard(id) {
 }
 document.addEventListener("click", e => { const b = e.target.closest("[data-show]"); if (b) showCard(b.dataset.show); });
 
-// ---- kostka: náhodně vybere restauraci, která má na vybraný den menu (a ještě vydává)
-const FACE_ROT = { 1: [0, 0], 2: [0, -90], 3: [0, -180], 4: [0, 90], 5: [-90, 0], 6: [90, 0] };
+// ---- automat: náhodně vybere restauraci, která má na vybraný den menu (a ještě vydává)
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 let lastPick = null, picked = null, rolling = false;
 
@@ -513,38 +518,39 @@ function rollDice() {
 
   $("roll").hidden = false;
   $("rollActions").classList.remove("show");
-  $("rollName").classList.remove("landed");
-  $("rollLabel").textContent = "házím…";
+  $("reel").classList.remove("won");
+  $("rollLabel").textContent = "točím…";
   $("rollDish").textContent = "";
 
-  const [x, y] = FACE_ROT[1 + Math.floor(Math.random() * 6)];
-  const duration = reduceMotion ? 0 : 1600;
-  if (!reduceMotion) {
-    $("cube").animate([
-      { transform: "rotateX(-20deg) rotateY(25deg) translateY(0)" },
-      { transform: `rotateX(${x - 540}deg) rotateY(${y + 300}deg) translateY(-40px)`, offset: .35 },
-      { transform: `rotateX(${x - 700}deg) rotateY(${y + 680}deg) translateY(0)`, offset: .75 },
-      { transform: `rotateX(${x - 720}deg) rotateY(${y + 720}deg)` },
-    ], { duration, easing: "cubic-bezier(.25,.8,.3,1)", fill: "forwards" });
-  }
-  // „automat“ – názvy se střídají a zpomalují; řídí se skutečně uplynulým časem
-  const start = performance.now();
-  let i = Math.floor(Math.random() * pool.length);
-  const tick = () => {
-    const t = performance.now() - start;
-    if (t >= duration) return land();
-    $("rollName").textContent = pool[i++ % pool.length].name;
-    setTimeout(tick, 60 + (t / duration) ** 2 * 220);
-  };
-  tick();
+  // pás: několik zamíchaných kol všech hospod, vítěz uprostřed předposledního řádku
+  const names = data.restaurants.map(r => r.name);
+  const shuffled = () => names.map(n => [Math.random(), n]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+  const seq = [];
+  for (let k = 0; k < 5; k++) seq.push(...shuffled());
+  // sousedé vítěze musí být jiné hospody
+  if (seq.at(-1) === picked.name && names.length > 1) seq.push(names.find(n => n !== picked.name));
+  seq.push(picked.name, shuffled().find(n => n !== picked.name) || picked.name);
+  $("strip").getAnimations().forEach(x => x.cancel());
+  $("strip").innerHTML = seq.map(n => `<div>${esc(n)}</div>`).join("");
+  const row = $("strip").firstElementChild.offsetHeight;
+  const end = -(seq.length - 3) * row;
+
+  if (reduceMotion) { $("strip").style.transform = `translateY(${end}px)`; return land(); }
+  $("strip").style.transform = "";
+  $("lever").animate([{ transform: "none" }, { transform: "scaleY(-.55)" }, { transform: "none" }],
+    { duration: 500, easing: "ease-in-out" });
+  $("strip").animate([
+    { transform: "translateY(0)" },
+    { transform: `translateY(${end - row * .25}px)`, offset: .88, easing: "ease-out" },
+    { transform: `translateY(${end}px)` },
+  ], { duration: 2600, delay: 150, easing: "cubic-bezier(.3,.05,.2,1)", fill: "forwards" }).onfinish = land;
 }
 function land() {
   rolling = false;
   const main = itemsFor(picked, current).filter(i => i.category === "hlavní");
   const tip = main.length ? main[Math.floor(Math.random() * main.length)] : null;
   $("rollLabel").textContent = "dnes jdeme do";
-  $("rollName").textContent = picked.name;
-  $("rollName").classList.add("landed");
+  $("reel").classList.add("won");
   $("rollDish").textContent = [picked.walk ? `${picked.walk.min} min pěšky (${dist(picked.walk.m)})` : "", tip ? `tip: ${tip.name}${tip.price ? ` (${tip.price},-)` : ""}` : ""].filter(Boolean).join(" · ");
   $("rollActions").classList.add("show");
 }
