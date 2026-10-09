@@ -251,8 +251,8 @@ async function init() {
   today = pragueToday();
   data = { ...meta, restaurants: meta.restaurants.map(r => ({ ...r, days: [], loading: true })) };
   const fromHash = location.hash.slice(1);
-  // datum v adrese platí jen pro dnešek a dál – uložená záložka na starý den otevře dnešek
-  current = /^\d{4}-\d{2}-\d{2}$/.test(fromHash) && fromHash > today ? fromHash : today;
+  // den z adresy se ověří až po načtení všech hospod (viz loadRestaurant) – dny bez dat se ignorují
+  current = /^\d{4}-\d{2}-\d{2}$/.test(fromHash) ? fromHash : today;
   updateDates();
   select(current);
   try { if (localStorage.getItem("view") === "map") setView("map"); } catch {}
@@ -276,13 +276,18 @@ async function loadRestaurant(id) {
   $("foot").textContent = data.restaurants.every(r => !r.loading) ? `načteno ${fmtTime(new Date().toISOString())}` : `načítám… ${updated}/${data.restaurants.length}`;
   const before = dates.join();
   updateDates();
+  const allLoaded = data.restaurants.every(r => !r.loading);
+  // den z odkazu, pro který žádná hospoda nemá menu (např. stará záložka) → dnešek
+  if (allLoaded && current !== today && !dates.includes(current)) return select(today);
   if (dates.join() !== before) renderDays();
   if (!dragged) render();
   if (map) refreshPins();
 }
 
 function updateDates() {
-  dates = [...new Set([today, current, ...data.restaurants.flatMap(r => r.days.map(d => d.date))])].filter(Boolean).sort();
+  const loading = data.restaurants.some(r => r.loading);
+  // dokud se načítá, necháme v nabídce i den z odkazu; pak jen dny, pro které existuje menu
+  dates = [...new Set([today, ...(loading ? [current] : []), ...data.restaurants.flatMap(r => r.days.map(d => d.date))])].filter(Boolean).sort();
 }
 
 function renderDays() {
