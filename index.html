@@ -298,10 +298,13 @@ function renderDays() {
   $("days").querySelector('[aria-pressed="true"]')?.scrollIntoView({ inline: "center", block: "nearest" });
 }
 
-function select(d) {
+// push = ruční přepnutí dne (klik, šipky) → nový záznam v historii, aby fungovalo tlačítko Zpět
+function select(d, { push = false } = {}) {
+  const changed = d !== current;
   current = d;
   // dnešek se do adresy nepíše, aby záložka vždy otevřela aktuální den
-  history.replaceState(null, "", d === today ? location.pathname + location.search : "#" + d);
+  const url = d === today ? location.pathname + location.search : "#" + d;
+  if (push && changed) history.pushState(null, "", url); else history.replaceState(null, "", url);
   renderDays();
   const f = fmtDate(d);
   $("title").textContent = `Obědy · ${f.short} ${f.dm}`;
@@ -384,13 +387,18 @@ function receipt(r, q) {
   </article>`;
 }
 
-$("days").addEventListener("click", e => { const b = e.target.closest(".day"); if (b) select(b.dataset.d); });
+$("days").addEventListener("click", e => { const b = e.target.closest(".day"); if (b) select(b.dataset.d, { push: true }); });
+// Zpět / Vpřed v prohlížeči
+window.addEventListener("popstate", () => {
+  const h = location.hash.slice(1);
+  if (data) select(dates.includes(h) ? h : today);
+});
 $("q").addEventListener("input", () => data && render());
 document.addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT" || !$("roll").hidden) return;
   const i = dates.indexOf(current);
-  if (e.key === "ArrowLeft" && i > 0) select(dates[i - 1]);
-  if (e.key === "ArrowRight" && i < dates.length - 1) select(dates[i + 1]);
+  if (e.key === "ArrowLeft" && i > 0) select(dates[i - 1], { push: true });
+  if (e.key === "ArrowRight" && i < dates.length - 1) select(dates[i + 1], { push: true });
 });
 // stav výdeje se mění s časem
 setInterval(() => { if (data && current === today && !dragged && view === "list") render(); }, 60000);
