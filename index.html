@@ -36,7 +36,7 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
 <style>
   /* Každá hospoda jako pokladní bloček. Světlý = bílé účtenky na šedé, tmavý = tmavé účtenky na černé. */
   :root {
-    --bg: #e4e3df; --paper: #fefefe; --ink: #1a1a1a; --muted: #6a6a6a; --faint: #a3a29d; --line: #b9b8b3;
+    --bg: #e4e3df; --paper: #fefefe; --ink: #1a1a1a; --muted: #595959; --faint: #a3a29d; --line: #b9b8b3;
     --ok: #1f6b38; --shadow: rgba(0, 0, 0, .08);
   }
   @media (prefers-color-scheme: dark) {
@@ -51,7 +51,7 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
   }
 
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; }
   body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 "JetBrains Mono", ui-monospace, monospace; }
   button, input { font: inherit; color: inherit; }
   a { color: inherit; }
