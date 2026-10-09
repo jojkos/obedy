@@ -251,7 +251,8 @@ async function init() {
   today = pragueToday();
   data = { ...meta, restaurants: meta.restaurants.map(r => ({ ...r, days: [], loading: true })) };
   const fromHash = location.hash.slice(1);
-  current = /^\d{4}-\d{2}-\d{2}$/.test(fromHash) ? fromHash : today;
+  // datum v adrese platí jen pro dnešek a dál – uložená záložka na starý den otevře dnešek
+  current = /^\d{4}-\d{2}-\d{2}$/.test(fromHash) && fromHash > today ? fromHash : today;
   updateDates();
   select(current);
   try { if (localStorage.getItem("view") === "map") setView("map"); } catch {}
@@ -293,7 +294,9 @@ function renderDays() {
 }
 
 function select(d) {
-  current = d; history.replaceState(null, "", "#" + d);
+  current = d;
+  // dnešek se do adresy nepíše, aby záložka vždy otevřela aktuální den
+  history.replaceState(null, "", d === today ? location.pathname + location.search : "#" + d);
   renderDays();
   const f = fmtDate(d);
   $("title").textContent = `Obědy · ${f.short} ${f.dm}`;
@@ -550,6 +553,9 @@ $("theme").addEventListener("click", () => {
   applyTheme(theme);
   try { theme === "light" ? localStorage.removeItem("theme") : localStorage.setItem("theme", theme); } catch {}
 });
+
+// aplikace nechaná otevřená přes noc se po návratu sama přepne na nový den
+document.addEventListener("visibilitychange", () => { if (!document.hidden && today && pragueToday() !== today) location.reload(); });
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 init().catch(() => { $("grid").innerHTML = `<p class="empty">nepodařilo se načíst seznam hospod, zkus to prosím za chvíli</p>`; });
