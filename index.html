@@ -508,14 +508,14 @@ document.addEventListener("click", e => { const b = e.target.closest("[data-show
 
 // ---- automat: náhodně vybere restauraci, která má na vybraný den menu (a ještě vydává)
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-let lastPick = null, picked = null, rolling = false;
+let lastPick = null, picked = null, rolling = false, spinRaf = 0;
 
 // otevře automat v klidu – točí se až po zatažení za páku
 function openSlot() {
   if (!data) return;
   const names = data.restaurants.map(r => r.name).sort(() => Math.random() - .5);
-  $("strip").getAnimations().forEach(x => x.cancel());
-  $("strip").style.transform = "";
+  cancelAnimationFrame(spinRaf); rolling = false; $("lever").disabled = false;
+  $("strip").style.transform = $("strip").style.filter = "";
   $("strip").innerHTML = names.slice(0, 3).map(n => `<div>${esc(n)}</div>`).join("");
   $("reel").classList.remove("won");
   $("rollLabel").textContent = "zatáhni za páku →";
@@ -540,28 +540,46 @@ function rollDice() {
   $("rollLabel").textContent = "točím…";
   $("rollDish").textContent = "";
 
-  // pás: několik zamíchaných kol všech hospod, vítěz uprostřed předposledního řádku
+  // Pohyb válce (v řádcích): rozjezd → plná rychlost → rovnoměrné brzdění přes posledních
+  // BRAKE řádků (každý další projede o něco pomaleji) → mírný přejezd a docvaknutí zpět.
+  const V = 16, ACC = .35, BRAKE = 13, OVER = .22, SETTLE = .28, TOTAL = 5;
+  const brakeT = 2 * (BRAKE + OVER) / V;
+  const T = Math.round(V * ACC / 2 + V * (TOTAL - ACC - brakeT - SETTLE) + BRAKE);   // horní viditelný řádek na konci
+  const cruiseT = (T - BRAKE - V * ACC / 2) / V;   // dorovnání na celý řádek
+
   const names = data.restaurants.map(r => r.name);
-  const shuffled = () => names.map(n => [Math.random(), n]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
   const seq = [];
-  for (let k = 0; k < 10; k++) seq.push(...shuffled());
-  // sousedé vítěze musí být jiné hospody
-  if (seq.at(-1) === picked.name && names.length > 1) seq.push(names.find(n => n !== picked.name));
-  seq.push(picked.name, shuffled().find(n => n !== picked.name) || picked.name);
+  for (let i = 0; i < T + 3; i++) {
+    const opts = names.filter(n => n !== seq[i - 1] && (i < T || n !== picked.name));
+    seq.push(i === T + 1 ? picked.name : opts[Math.floor(Math.random() * opts.length)] || names[0]);
+  }
+  cancelAnimationFrame(spinRaf);
   $("strip").getAnimations().forEach(x => x.cancel());
   $("strip").innerHTML = seq.map(n => `<div>${esc(n)}</div>`).join("");
   const row = $("strip").firstElementChild.offsetHeight;
-  const end = -(seq.length - 3) * row;
+  const put = (pos, blur = 0) => {
+    $("strip").style.transform = `translateY(${-pos * row}px)`;
+    $("strip").style.filter = blur > .2 ? `blur(${blur.toFixed(2)}px)` : "";
+  };
+  if (reduceMotion) { put(T); return land(); }
 
-  if (reduceMotion) { $("strip").style.transform = `translateY(${end}px)`; return land(); }
-  $("strip").style.transform = "";
   $("lever").firstElementChild.animate([{ transform: "none" }, { transform: "scaleY(-.55)" }, { transform: "none" }],
     { duration: 500, easing: "ease-in-out" });
-  $("strip").animate([
-    { transform: "translateY(0)" },
-    { transform: `translateY(${end - row * .25}px)`, offset: .88, easing: "ease-out" },
-    { transform: `translateY(${end}px)` },
-  ], { duration: 4850, delay: 150, easing: "cubic-bezier(.3,.05,.2,1)", fill: "forwards" }).onfinish = land;
+  const t1 = ACC, t2 = t1 + cruiseT, t3 = t2 + brakeT, s1 = V * ACC / 2, s2 = s1 + V * cruiseT, dec = V / brakeT;
+  const start = performance.now() + 150;
+  const frame = now => {
+    const t = Math.max(0, (now - start) / 1000);
+    let pos, v;
+    if (t < t1) { v = V * t / ACC; pos = v * t / 2; }
+    else if (t < t2) { v = V; pos = s1 + V * (t - t1); }
+    else if (t < t3) { const u = t - t2; v = V - dec * u; pos = s2 + V * u - dec * u * u / 2; }
+    else if (t < t3 + SETTLE) { const k = (t - t3) / SETTLE; v = 0; pos = T + OVER * (1 - k * k * (3 - 2 * k)); }
+    else { put(T); return land(); }
+    put(pos, v / 10);
+    spinRaf = requestAnimationFrame(frame);
+  };
+  put(0);
+  spinRaf = requestAnimationFrame(frame);
 }
 function land() {
   rolling = false;
