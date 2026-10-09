@@ -175,12 +175,17 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
   .strip div { height: var(--row); line-height: var(--row); padding: 0 22px; font-size: 19px; font-weight: 800; text-transform: uppercase;
     letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .reel.won .payline { background: color-mix(in srgb, var(--ink) 7%, transparent); }
-  .lever { position: relative; width: 16px; height: 96px; flex: none; transform-origin: 50% 100%; }
-  .lever::before { content: ""; position: absolute; left: 6px; top: 12px; bottom: 0; width: 4px; background: var(--ink); }
-  .lever::after { content: ""; position: absolute; left: 0; top: 0; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); }
-  .roll-dish { color: var(--muted); font-size: 13px; min-height: 2.8em; }
-  .roll-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; visibility: hidden; }
-  .roll-actions.show { visibility: visible; }
+  .lever { position: relative; width: 32px; height: 108px; flex: none; padding: 0; border: 0; background: none; cursor: grab; }
+  .lever:disabled { cursor: default; }
+  .lever i { position: absolute; inset: 6px 8px 0; transform-origin: 50% 100%; transition: transform .15s; }
+  .lever i::before { content: ""; position: absolute; left: 6px; top: 12px; bottom: 0; width: 4px; background: var(--ink); }
+  .lever i::after { content: ""; position: absolute; left: 0; top: 0; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); }
+  .lever:not(:disabled):hover i { transform: rotate(8deg); }
+  .lever:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .roll-dish { color: var(--muted); font-size: 13px; }
+  .roll-dish:empty { display: none; }
+  .roll-actions { display: none; gap: 8px; justify-content: center; margin-top: 10px; }
+  .roll-actions.show { display: flex; }
 
   @media (max-width: 640px) {
     .tools { width: 100%; display: grid; grid-template-columns: 1fr auto; }
@@ -219,10 +224,9 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
   <div class="roll-box">
     <div class="paper">
       <div class="roll-label" id="rollLabel"></div>
-      <div class="slot"><div class="reel" id="reel"><div class="strip" id="strip"></div><div class="payline"></div></div><div class="lever" id="lever" aria-hidden="true"></div></div>
+      <div class="slot"><div class="reel" id="reel"><div class="strip" id="strip"></div><div class="payline"></div></div><button type="button" class="lever" id="lever" aria-label="Zatáhnout za páku" title="Zatáhni za páku"><i></i></button></div>
       <div class="roll-dish" id="rollDish"></div>
       <div class="roll-actions" id="rollActions">
-        <button type="button" class="btn" id="rollAgain">znovu</button>
         <button type="button" class="btn solid" id="rollGo">ukázat menu</button>
       </div>
     </div>
@@ -506,6 +510,20 @@ document.addEventListener("click", e => { const b = e.target.closest("[data-show
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 let lastPick = null, picked = null, rolling = false;
 
+// otevře automat v klidu – točí se až po zatažení za páku
+function openSlot() {
+  if (!data) return;
+  const names = data.restaurants.map(r => r.name).sort(() => Math.random() - .5);
+  $("strip").getAnimations().forEach(x => x.cancel());
+  $("strip").style.transform = "";
+  $("strip").innerHTML = names.slice(0, 3).map(n => `<div>${esc(n)}</div>`).join("");
+  $("reel").classList.remove("won");
+  $("rollLabel").textContent = "zatáhni za páku →";
+  $("rollDish").textContent = "";
+  $("rollActions").classList.remove("show");
+  $("roll").hidden = false;
+  $("lever").focus();
+}
 function rollDice() {
   if (!data || rolling) return;
   const withMenu = data.restaurants.filter(r => itemsFor(r, current).length);
@@ -516,7 +534,7 @@ function rollDice() {
   lastPick = picked.id;
   rolling = true;
 
-  $("roll").hidden = false;
+  $("lever").disabled = true;
   $("rollActions").classList.remove("show");
   $("reel").classList.remove("won");
   $("rollLabel").textContent = "točím…";
@@ -537,7 +555,7 @@ function rollDice() {
 
   if (reduceMotion) { $("strip").style.transform = `translateY(${end}px)`; return land(); }
   $("strip").style.transform = "";
-  $("lever").animate([{ transform: "none" }, { transform: "scaleY(-.55)" }, { transform: "none" }],
+  $("lever").firstElementChild.animate([{ transform: "none" }, { transform: "scaleY(-.55)" }, { transform: "none" }],
     { duration: 500, easing: "ease-in-out" });
   $("strip").animate([
     { transform: "translateY(0)" },
@@ -547,6 +565,7 @@ function rollDice() {
 }
 function land() {
   rolling = false;
+  $("lever").disabled = false;
   const main = itemsFor(picked, current).filter(i => i.category === "hlavní");
   const tip = main.length ? main[Math.floor(Math.random() * main.length)] : null;
   $("rollLabel").textContent = "dnes jdeme do";
@@ -555,8 +574,8 @@ function land() {
   $("rollActions").classList.add("show");
 }
 function closeRoll() { if (!rolling) $("roll").hidden = true; }
-$("dice").addEventListener("click", rollDice);
-$("rollAgain").addEventListener("click", rollDice);
+$("dice").addEventListener("click", openSlot);
+$("lever").addEventListener("click", rollDice);
 $("rollGo").addEventListener("click", () => { closeRoll(); showCard(picked.id); });
 $("roll").addEventListener("click", e => { if (e.target.id === "roll") closeRoll(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeRoll(); });
