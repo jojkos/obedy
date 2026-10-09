@@ -138,6 +138,7 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
   .pin { display: flex; align-items: center; gap: 6px; white-space: nowrap; transform: translate(-6px, -6px); }
   .pin i { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper); box-shadow: 0 0 0 1px var(--ink); flex: none; }
   .pin span { background: var(--paper); color: var(--ink); border: 1px solid var(--ink); padding: 1px 6px; font-size: 11.5px; font-weight: 700; }
+  .pin span small { display: block; font-size: 10.5px; font-weight: 400; color: var(--muted); }
   .pin.left { flex-direction: row-reverse; transform: translate(calc(-100% + 6px), -6px); }
   .pin.home i { border-radius: 2px; }
   .pin.home span { background: var(--ink); color: var(--paper); }
@@ -323,10 +324,11 @@ function status(r) {
   if (n < toMin(to)) return { cls: "open", text: w[1] };
   return { cls: "over", text: w[2] };
 }
+function dist(m) { return m >= 1000 ? `${(m / 1000).toFixed(1).replace(".", ",")} km` : `${Math.round(m / 10) * 10} m`; }
 function walkUrl(r) { return `https://www.google.com/maps/dir/?api=1&travelmode=walking&origin=${encodeURIComponent(data.origin)}&destination=${r.walk.geo}`; }
 function sub(r) {
   const st = status(r);
-  const line1 = [esc(r.address), r.walk ? `<a href="${walkUrl(r)}" target="_blank" rel="noopener" title="Navigace pěšky">${r.walk.min} min pěšky</a>` : ""].filter(Boolean).join(" · ");
+  const line1 = [esc(r.address), r.walk ? `<a href="${walkUrl(r)}" target="_blank" rel="noopener" title="Navigace pěšky">${r.walk.min} min pěšky · ${dist(r.walk.m)}</a>` : ""].filter(Boolean).join(" · ");
   const hours = r.hours ? (r.hours.menu ? `výdej ${r.hours.menu[0]}–${r.hours.menu[1]}` : `otevřeno ${r.hours.open[0]}–${r.hours.open[1]}`) : "";
   const line2 = [hours, st ? `<span class="st-${st.cls}">${st.text}</span>` : ""].filter(Boolean).join(" · ");
   return `<div class="sub">${line1}${line2 ? `<br>${line2}` : ""}</div>`;
@@ -458,7 +460,7 @@ function refreshPins() {
     // popisek doleva, když je hned vpravo jiný špendlík (Šindelář a K2 jsou kousek od sebe)
     const crowded = data.restaurants.some(o => o.walk && o !== r && Math.abs(geo(o.walk.geo)[0] - lat) < .0008 && geo(o.walk.geo)[1] - lon > 0 && geo(o.walk.geo)[1] - lon < .004);
     const cls = [itemsFor(r, current).length ? "" : "nomenu", crowded ? "left" : ""].join(" ");
-    const icon = L.divIcon({ className: "", html: `<div class="pin ${cls}"><i></i><span>${esc(r.name)} · ${r.walk.min} min</span></div>`, iconSize: [0, 0] });
+    const icon = L.divIcon({ className: "", html: `<div class="pin ${cls}"><i></i><span>${esc(r.name)}<small>${r.walk.min} min · ${dist(r.walk.m)}</small></span></div>`, iconSize: [0, 0] });
     return L.marker([lat, lon], { icon }).bindPopup(() => popupHtml(r), { offset: [0, -4] }).addTo(map);
   });
 }
@@ -543,7 +545,7 @@ function land() {
   $("rollLabel").textContent = "dnes jdeme do";
   $("rollName").textContent = picked.name;
   $("rollName").classList.add("landed");
-  $("rollDish").textContent = [picked.walk ? `${picked.walk.min} min pěšky` : "", tip ? `tip: ${tip.name}${tip.price ? ` (${tip.price},-)` : ""}` : ""].filter(Boolean).join(" · ");
+  $("rollDish").textContent = [picked.walk ? `${picked.walk.min} min pěšky (${dist(picked.walk.m)})` : "", tip ? `tip: ${tip.name}${tip.price ? ` (${tip.price},-)` : ""}` : ""].filter(Boolean).join(" · ");
   $("rollActions").classList.add("show");
 }
 function closeRoll() { if (!rolling) $("roll").hidden = true; }
