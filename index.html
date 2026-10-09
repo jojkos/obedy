@@ -544,7 +544,7 @@ function rollDice() {
   const names = data.restaurants.map(r => r.name);
   const shuffled = () => names.map(n => [Math.random(), n]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
   const seq = [];
-  for (let k = 0; k < 5; k++) seq.push(...shuffled());
+  for (let k = 0; k < 10; k++) seq.push(...shuffled());
   // sousedé vítěze musí být jiné hospody
   if (seq.at(-1) === picked.name && names.length > 1) seq.push(names.find(n => n !== picked.name));
   seq.push(picked.name, shuffled().find(n => n !== picked.name) || picked.name);
@@ -561,7 +561,7 @@ function rollDice() {
     { transform: "translateY(0)" },
     { transform: `translateY(${end - row * .25}px)`, offset: .88, easing: "ease-out" },
     { transform: `translateY(${end}px)` },
-  ], { duration: 2600, delay: 150, easing: "cubic-bezier(.3,.05,.2,1)", fill: "forwards" }).onfinish = land;
+  ], { duration: 4850, delay: 150, easing: "cubic-bezier(.3,.05,.2,1)", fill: "forwards" }).onfinish = land;
 }
 function land() {
   rolling = false;
