@@ -1,0 +1,12 @@
+# Obědy u Plynárenské
+
+> Polední menu restaurací v okolí Plynárenské 1 v Brně (K2 Gastro, Bistro Šindelář, Pivnice U Badinů, Sargam 2, Golden Nepal, AnZi Brno) na jednom místě – s cenami, časem chůze a otevírací dobou. Data se stahují z webů restaurací, menu z obrázků přepisuje AI.
+
+## API (JSON, jen čtení)
+
+- [Seznam restaurací](https://www.obedy.space/api/sources): id, název, adresa, čas a vzdálenost pěšky (`walk.min`, `walk.m`), GPS, výdej menu
+- [Menu jedné restaurace](https://www.obedy.space/api/menu?source=k2): `?source=<id>`, vrací položky po dnech (`category`: polévka / hlavní / ostatní, `name`, `price` v Kč, `note`)
+
+## Stránka
+
+- [Obědy](https://www.obedy.space/): přehled dnešních menu, přepínání dnů (`#YYYY-MM-DD`), mapa

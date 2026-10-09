@@ -2,7 +2,7 @@
 
 Dnešní polední menu z hospod a bister kolem Plynárenské 1 v Brně na jedné stránce – s cenami, časem výdeje, pěší vzdáleností, mapou a kostkou pro nerozhodné.
 
-**Živě:** https://obedy-sigma.vercel.app
+**Živě:** https://www.obedy.space
 
 ## Jak to funguje
 

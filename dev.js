@@ -9,7 +9,8 @@ import sources from "./api/sources.js";
 try { process.loadEnvFile(new URL("./.env.local", import.meta.url).pathname); } catch {} // GEMINI_API_KEY=…
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".svg": "image/svg+xml",
-  ".png": "image/png", ".webmanifest": "application/manifest+json" };
+  ".png": "image/png", ".webmanifest": "application/manifest+json",
+  ".txt": "text/plain; charset=utf-8", ".xml": "application/xml" };
 
 createServer(async (req, res) => {
   if (req.url.startsWith("/api/menus")) return handler(req, res);
