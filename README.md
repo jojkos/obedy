@@ -11,8 +11,7 @@ Dnešní polední menu z hospod a bister kolem Plynárenské 1 v Brně na jedné
   - **K2 Gastro, Bistro Šindelář, Sargam 2** – HTML
   - **Pivnice U Badinů** – JSON z jejich menu systému (ChoiceQR)
   - **Golden Nepal** – menu je jen obrázek → přečte ho Gemini
-  - **AnZi** – menu je fotka v příspěvku na Facebooku → najde se poslední příspěvek s menu a fotku přečte Gemini
-  - **Matyho chálka** – denní menu je jen na Facebooku → poslední příspěvek s menu (text i fotky) přečte Gemini
+  - **AnZi, Matyho chálka** – menu je jen na Facebooku → všechny příspěvky za poslední týden (texty + fotky, na kterých je podle Facebooku text) dostane Gemini a poskládá z nich menu po dnech: denní i týdenní menu, ceny z týdenního menu doplní k denním příspěvkům
 - `api/vision.js` + `lib/vision.js` – čtení obrázků přes Gemini (free tier). Výsledek se cachuje do půlnoci podle URL obrázku, takže Gemini se ptá max. jednou denně na obrázek.
 - `index.html` – celá stránka (bez frameworku), PWA (`manifest.webmanifest`, `sw.js`).
 
