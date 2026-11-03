@@ -12,6 +12,7 @@ Dnešní polední menu z hospod a bister kolem Plynárenské 1 v Brně na jedné
   - **Pivnice U Badinů** – JSON z jejich menu systému (ChoiceQR)
   - **Golden Nepal** – menu je jen obrázek → přečte ho Gemini
   - **AnZi** – menu je fotka v příspěvku na Facebooku → najde se poslední příspěvek s menu a fotku přečte Gemini
+  - **Matyho chálka** – denní menu je jen na Facebooku → poslední příspěvek s menu (text i fotky) přečte Gemini
 - `api/vision.js` + `lib/vision.js` – čtení obrázků přes Gemini (free tier). Výsledek se cachuje do půlnoci podle URL obrázku, takže Gemini se ptá max. jednou denně na obrázek.
 - `index.html` – celá stránka (bez frameworku), PWA (`manifest.webmanifest`, `sw.js`).
 
@@ -22,7 +23,7 @@ echo "GEMINI_API_KEY=…" > .env.local   # klíč z https://aistudio.google.com/
 node dev.js                           # http://localhost:3000
 ```
 
-Bez klíče fungují všechny restaurace kromě Golden Nepal a AnZi.
+Bez klíče fungují všechny restaurace kromě Golden Nepal, AnZi a Matyho chálky.
 
 ## Nasazení
 
