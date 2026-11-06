@@ -118,8 +118,9 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
   .foot a { text-decoration: none; }
   .foot a:hover { text-decoration: underline; }
   .grip { position: absolute; top: 10px; right: 10px; border: 0; background: none; color: var(--faint); font-size: 16px; line-height: 1;
-    padding: 4px 6px; cursor: grab; touch-action: none; }
+    padding: 4px 6px; cursor: grab; }
   .grip:hover { color: var(--ink); }
+  @media (pointer: coarse) { .grip { top: 2px; right: 2px; padding: 12px 14px; cursor: pointer; } }
   .receipt.dragging { opacity: .5; }
   .receipt.dragging .paper { outline: 2px dashed var(--ink); outline-offset: 4px; }
   .receipt.past { opacity: .5; }
@@ -190,6 +191,24 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
   .roll-actions.show { display: flex; animation-delay: .08s; }
   @keyframes reveal { from { opacity: 0; transform: translateY(-4px); } }
 
+  /* ---- pořadí hospod (stejný papír jako automat) */
+  .sort-title { font-size: 18px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; }
+  .sort-list { list-style: none; width: 100%; margin: 10px 0 0; padding: 0; border-top: 1px dashed var(--ink); text-align: left;
+    max-height: 60vh; overflow-y: auto; }
+  .sort-list li { display: flex; align-items: center; background: var(--paper); border-bottom: 1px dashed var(--ink); }
+  .sort-grip { flex: none; width: 40px; height: 44px; display: grid; place-items: center; color: var(--faint); cursor: grab; touch-action: none; user-select: none; }
+  .sort-grip:hover { color: var(--ink); }
+  .sort-name { flex: 1; min-width: 0; font-weight: 700; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sort-mv { flex: none; width: 40px; height: 44px; border: 0; background: none; cursor: pointer; font-size: 16px; }
+  .sort-mv:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .sort-mv:disabled { opacity: .2; cursor: default; }
+  .sort-mv:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  .sort-list li.dragging { position: relative; z-index: 1; outline: 2px dashed var(--ink); outline-offset: -2px; box-shadow: 0 6px 16px var(--shadow); }
+  .sort-list li.dragging .sort-grip { cursor: grabbing; color: var(--ink); }
+  .sort-list li.hi { animation: hi 1.6s ease-out; }
+  @keyframes hi { from { background: color-mix(in srgb, var(--ink) 14%, var(--paper)); } }
+  .sort-actions { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+
   @media (max-width: 640px) {
     .tools { width: 100%; display: grid; grid-template-columns: 1fr auto; }
     .search { width: 100%; grid-column: 1 / -1; }
@@ -231,6 +250,21 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
       <div class="roll-dish" id="rollDish"></div>
       <div class="roll-actions" id="rollActions">
         <button type="button" class="btn solid" id="rollGo">ukázat menu</button>
+      </div>
+    </div>
+    <div class="zigzag"></div>
+  </div>
+</div>
+
+<div class="roll" id="sort" hidden role="dialog" aria-modal="true" aria-labelledby="sortTitle">
+  <div class="roll-box">
+    <div class="paper">
+      <div class="sort-title" id="sortTitle">pořadí hospod</div>
+      <div class="roll-label">přetáhni za ⠿ nebo posuň šipkami</div>
+      <ol class="sort-list" id="sortList"></ol>
+      <div class="sort-actions">
+        <button type="button" class="btn" id="sortReset">výchozí</button>
+        <button type="button" class="btn solid" id="sortDone">hotovo</button>
       </div>
     </div>
     <div class="zigzag"></div>
@@ -358,10 +392,13 @@ function rows(items, q) {
 
 function render() {
   const q = norm($("q").value.trim());
+  $("grid").innerHTML = ordered().map(r => receipt(r, q)).join("");
+}
+// hospody v pořadí, které si návštěvník nastavil; nové (v uloženém pořadí chybí) jdou na konec
+function ordered() {
   const order = loadOrder();
   const pos = id => { const i = order.indexOf(id); return i < 0 ? 1e3 : i; };
-  const rs = data.restaurants.map((r, i) => ({ r, i })).sort((a, b) => pos(a.r.id) - pos(b.r.id) || a.i - b.i).map(x => x.r);
-  $("grid").innerHTML = rs.map(r => receipt(r, q)).join("");
+  return data.restaurants.map((r, i) => ({ r, i })).sort((a, b) => pos(a.r.id) - pos(b.r.id) || a.i - b.i).map(x => x.r);
 }
 
 function receipt(r, q) {
@@ -390,7 +427,7 @@ function receipt(r, q) {
   const past = status(r)?.cls === "over" ? "past" : "";
   return `<article class="receipt ${past}" data-id="${esc(r.id)}">
     <div class="paper">
-      <button class="grip" type="button" title="Přetáhni pro změnu pořadí" aria-label="Přesunout ${esc(r.name)}">⠿</button>
+      <button class="grip" type="button" title="Změnit pořadí (myší jde kartu i přetáhnout)" aria-label="Pořadí hospod – ${esc(r.name)}">⠿</button>
       <h2><a href="${link}" target="_blank" rel="noopener">${esc(r.name)}</a></h2>
       ${sub(r)}
       <div class="cut"></div>
@@ -410,7 +447,7 @@ window.addEventListener("popstate", () => {
 });
 $("q").addEventListener("input", () => data && render());
 document.addEventListener("keydown", e => {
-  if (e.target.tagName === "INPUT" || !$("roll").hidden) return;
+  if (e.target.tagName === "INPUT" || !$("roll").hidden || !$("sort").hidden) return;
   const i = dates.indexOf(current);
   if (e.key === "ArrowLeft" && i > 0) select(dates[i - 1], { push: true });
   if (e.key === "ArrowRight" && i < dates.length - 1) select(dates[i + 1], { push: true });
@@ -418,32 +455,125 @@ document.addEventListener("keydown", e => {
 // stav výdeje se mění s časem
 setInterval(() => { if (data && current === today && !dragged && view === "list") render(); }, 60000);
 
-// ---- pořadí restaurací: přetahování za úchyt, funguje myší i prstem
+// ---- pořadí restaurací: klepnutí na úchyt ⠿ otevře seznam (šipky + přetahování v krátkém seznamu),
+// myší jde navíc přetáhnout přímo karta. Prstem se karty netahají – jsou vysoké, na mobilu pod sebou
+// a stránka by se při tažení neposouvala, takže by to nešlo použít.
 function loadOrder() { try { return JSON.parse(localStorage.getItem("order")) || []; } catch { return []; } }
-function saveOrder() {
-  const ids = [...document.querySelectorAll("#grid .receipt")].map(c => c.dataset.id);
+function saveOrder(ids) {
   try { localStorage.setItem("order", JSON.stringify(ids)); } catch {}
 }
-let dragged = null;
+let dragged = null, dragMoved = false, skipClick = false;
 $("grid").addEventListener("pointerdown", e => {
   const grip = e.target.closest(".grip");
-  if (!grip) return;
+  if (!grip || e.pointerType !== "mouse" || e.button !== 0) return;
   e.preventDefault();
   dragged = grip.closest(".receipt");
-  dragged.classList.add("dragging");
+  dragMoved = false;
 });
 // Přesun karty v DOM zruší pointer capture, proto pohyb i konec tažení sledujeme na celém dokumentu.
 document.addEventListener("pointermove", e => {
   if (!dragged) return;
   const over = document.elementFromPoint(e.clientX, e.clientY)?.closest(".receipt");
   if (!over || over === dragged) return;
+  if (!dragMoved) { dragMoved = true; dragged.classList.add("dragging"); }
   const cards = [...document.querySelectorAll("#grid .receipt")];
   over.parentNode.insertBefore(dragged, cards.indexOf(dragged) < cards.indexOf(over) ? over.nextSibling : over);
 });
-const endDrag = () => { if (!dragged) return; dragged.classList.remove("dragging"); dragged = null; saveOrder(); };
+const endDrag = () => {
+  if (!dragged) return;
+  dragged.classList.remove("dragging");
+  dragged = null;
+  if (!dragMoved) return;
+  saveOrder([...document.querySelectorAll("#grid .receipt")].map(c => c.dataset.id));
+  // po přetažení nemá kliknutí otevřít seznam (click přijde hned po pointerup)
+  skipClick = true;
+  setTimeout(() => { skipClick = false; });
+};
 document.addEventListener("pointerup", endDrag);
 document.addEventListener("pointercancel", endDrag);
 window.addEventListener("blur", endDrag);
+$("grid").addEventListener("click", e => {
+  const grip = e.target.closest(".grip");
+  if (grip && !skipClick) openSort(grip.closest(".receipt").dataset.id);
+});
+
+// seznam s pořadím: změny se hned propíšou do karet za ním
+let sortId = null, sorting = null;
+function openSort(id) {
+  sortId = id;
+  fillSort();
+  $("sort").hidden = false;
+  const li = $("sortList").querySelector(`[data-id="${CSS.escape(id)}"]`);
+  // krátce zvýraznit hospodu, z jejíž karty se seznam otevřel (jen jednou – přesun v DOM by animaci spustil znovu)
+  li?.classList.add("hi");
+  li?.addEventListener("animationend", () => li.classList.remove("hi"), { once: true });
+  li?.scrollIntoView({ block: "nearest" });
+  $("sortDone").focus();
+}
+function fillSort() {
+  $("sortList").innerHTML = ordered().map(r => `<li data-id="${esc(r.id)}">
+    <span class="sort-grip" aria-hidden="true">⠿</span><span class="sort-name">${esc(r.name)}</span>
+    <button type="button" class="sort-mv" data-d="-1" aria-label="${esc(r.name)} výš">↑</button><button type="button" class="sort-mv" data-d="1" aria-label="${esc(r.name)} níž">↓</button></li>`).join("");
+  sortArrows();
+}
+function sortArrows() {
+  const rows = [...$("sortList").children];
+  rows.forEach((li, i) => {
+    li.querySelector('[data-d="-1"]').disabled = i === 0;
+    li.querySelector('[data-d="1"]').disabled = i === rows.length - 1;
+  });
+}
+function applySort() {
+  saveOrder([...$("sortList").children].map(li => li.dataset.id));
+  sortArrows();
+  render();
+}
+function closeSort() {
+  if ($("sort").hidden) return;
+  endSort();
+  $("sort").hidden = true;
+  // karty se mezitím překreslily → focus zpět na úchyt téže hospody (bez skákání stránky)
+  $("grid").querySelector(`[data-id="${CSS.escape(sortId)}"] .grip`)?.focus({ preventScroll: true });
+}
+$("sortList").addEventListener("click", e => {
+  const b = e.target.closest(".sort-mv");
+  if (!b || b.disabled) return;
+  const li = b.closest("li"), list = $("sortList");
+  if (b.dataset.d === "-1") list.insertBefore(li, li.previousElementSibling);
+  else list.insertBefore(li, li.nextElementSibling.nextElementSibling);
+  applySort();
+  // přesunutý prvek ztratí focus → vrátit, ať jde šipkou mačkat opakovaně (a klávesnicí)
+  (b.disabled ? li.querySelector(`.sort-mv:not([data-d="${b.dataset.d}"])`) : b).focus();
+});
+// přetahování v seznamu – řádky jsou nízké a vejdou se na obrazovku, takže to funguje i prstem
+$("sortList").addEventListener("pointerdown", e => {
+  const g = e.target.closest(".sort-grip");
+  if (!g) return;
+  e.preventDefault();
+  sorting = g.closest("li");
+  sorting.classList.add("dragging");
+});
+document.addEventListener("pointermove", e => {
+  if (!sorting) return;
+  const rows = [...$("sortList").children];
+  const top = rows[0].getBoundingClientRect().top, bottom = rows.at(-1).getBoundingClientRect().bottom;
+  const y = Math.min(Math.max(e.clientY, top + 1), bottom - 1); // nad/pod seznamem = první/poslední místo
+  const over = rows.find(li => { const r = li.getBoundingClientRect(); return y >= r.top && y < r.bottom; });
+  if (!over || over === sorting) return;
+  $("sortList").insertBefore(sorting, rows.indexOf(sorting) < rows.indexOf(over) ? over.nextSibling : over);
+  applySort();
+});
+function endSort() { if (!sorting) return; sorting.classList.remove("dragging"); sorting = null; }
+document.addEventListener("pointerup", endSort);
+document.addEventListener("pointercancel", endSort);
+$("sortDone").addEventListener("click", closeSort);
+$("sortReset").addEventListener("click", () => {
+  try { localStorage.removeItem("order"); } catch {}
+  fillSort();
+  render();
+});
+$("sort").addEventListener("click", e => { if (e.target.id === "sort") closeSort(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSort(); });
 
 // ---- seznam / mapa (Leaflet + OpenStreetMap, načte se až při prvním otevření mapy)
 let map = null, pins = [];
