@@ -435,7 +435,7 @@ function receipt(r, q) {
       <div class="cut"></div>
       ${body}
       <div class="cut"></div>
-      <div class="foot"><a href="${link}" target="_blank" rel="noopener">* originální menu *</a>${items.length && r.images?.length ? "<span>přepsáno z obrázku</span>" : ""}</div>
+      <div class="foot"><a href="${link}" target="_blank" rel="noopener">* originální menu *</a>${!items.length ? "" : r.images?.length ? "<span>přepsáno z obrázku</span>" : r.via === "ai" ? "<span>přečteno AI</span>" : ""}</div>
     </div>
     <div class="zigzag"></div>
   </article>`;
