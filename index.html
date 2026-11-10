@@ -102,6 +102,8 @@ if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme
   .sec { font-weight: 700; text-transform: uppercase; margin-top: 4px; }
   .sec small { font-size: inherit; font-weight: 400; text-transform: none; color: var(--muted); }
   .row { display: flex; justify-content: space-between; gap: 14px; }
+  /* dlouhé „slovo“ v názvu (např. „salát,rajče,slanina“) nesmí vytlačit cenu z účtenky */
+  .row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
   .row small { display: block; color: var(--muted); font-size: 12.5px; }
   .price { font-weight: 700; white-space: nowrap; }
   .price.incl { font-weight: 400; color: var(--muted); }
