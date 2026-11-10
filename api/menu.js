@@ -12,6 +12,6 @@ export default async function handler(req, res) {
   }
   const today = pragueToday();
   const restaurant = await scrapeOne(id, today);
-  res.setHeader("Cache-Control", menusCacheControl(Boolean(restaurant.error || restaurant.visionError)));
+  res.setHeader("Cache-Control", menusCacheControl(Boolean(restaurant.error || restaurant.visionError || restaurant.stale)));
   res.end(JSON.stringify({ today, updated: new Date().toISOString(), restaurant }));
 }
