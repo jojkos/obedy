@@ -26,7 +26,7 @@ Bez klíče fungují všechny restaurace kromě Golden Nepal, AnZi a Matyho chá
 
 ## Nasazení
 
-Vercel, bez build kroku. V projektu nastav proměnnou prostředí `GEMINI_API_KEY`.
+Vercel, bez build kroku. Funkce běží ve Frankfurtu (`regions: ["fra1"]` ve `vercel.json`) – web Bistra Šindelář vracel serverům v USA trvale HTTP 429. V projektu nastav proměnnou prostředí `GEMINI_API_KEY`.
 
 ## Přidání restaurace
 
